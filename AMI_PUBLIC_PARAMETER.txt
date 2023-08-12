@@ -1,0 +1,68 @@
+AMI PUBLIC PARAMETER 
+
+--->> https://docs.aws.amazon.com/systems-manager/latest/userguide/parameter-store-public-parameters-ami.html
+
+----> ubuntu and mac os
+
+(aws ssm get-parameters-by-path \
+    --path /aws/service/ami-amazon-linux-latest \
+    --query 'Parameters[].Name'
+
+aws ssm get-parameters-by-path \
+    --path "/aws/service/ami-amazon-linux-latest" \
+    --region region ) 
+
+----> windows 
+
+aws ssm get-parameters-by-path ^
+    --path "/aws/service/ami-amazon-linux-latest" ^
+    --region us-east-1
+
+aws ssm get-parameters-by-path ^
+    --path /aws/service/ami-amazon-linux-latest ^
+    --query Parameters[].Name 
+--------------------------------------------------
+aws ssm get-parameters-by-path ^
+    --path /aws/service/ami-amazon-linux-latest ^
+    --query "Parameters[].{Name:Name, Value:Value}" ^
+    --output table ^
+    --region us-east-1
+----------------------------------------------------
+
+aws ssm get-parameters ^
+    --names /aws/service/ami-windows-latest/Windows_Server-2016-English-Core-Containers ^
+    --region us-east-2
+
+
+---->>> terraform using data aws_ssm_parameter
+
+----->>> 
+
+In Terraform, "SSM parameter" refers to a parameter stored in AWS Systems Manager (SSM) Parameter Store. AWS Systems Manager Parameter Store is a service that allows you to securely manage configuration data and secrets for your applications. It provides a centralized store to manage information like database connection strings, API keys, passwords, and other sensitive data.
+
+
+resource "aws_ssm_parameter" "database_password" {
+  name        = "/myapp/database_password"
+  description = "Password for the database"
+  type        = "SecureString"
+  value       = "supersecret123"
+}
+
+resource "aws_instance" "example" {
+  ami           = "ami-0c55b159cbfafe1f0"
+  instance_type = "t2.micro"
+
+  tags = {
+    Name = "MyInstance"
+  }
+
+  user_data = <<-EOT
+    #!/bin/bash
+    # Retrieve the database password from SSM Parameter Store
+    DB_PASSWORD=$(aws ssm get-parameter --name /myapp/database_password --query "Parameter.Value" --output text)
+
+    # Use the password in your application configuration
+    echo "Database Password: $DB_PASSWORD"
+    EOT
+}
+
